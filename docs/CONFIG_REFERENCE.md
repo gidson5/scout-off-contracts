@@ -83,6 +83,22 @@ Before running `./scripts/deploy.sh mainnet`:
 
 ---
 
+## Contract-Level Settings
+
+### Registration Cooldown (`set_reg_cooldown` / `get_reg_cooldown`)
+
+| Setting | Default | Bounds | Description |
+|---------|---------|--------|-------------|
+| `reg_cooldown_secs` | `86400` (24h) | `0..=604800` (0 = disabled, max 7 days) | Per-wallet cooldown between `register_player` and `register_scout` calls. Set via `set_reg_cooldown` (admin only). Emits `reg_cooldown_updated` event. |
+
+### Verification Cooldown (`set_reg_cooldown` / `get_reg_cooldown`)
+
+| Setting | Default | Bounds | Description |
+|---------|---------|--------|-------------|
+| `reg_cooldown_secs` | `0` (disabled) | `0..=604800` (0 = disabled, max 7 days) | Per-wallet cooldown between `register_validator` calls. Set via `set_reg_cooldown` (admin only). |
+
+---
+
 ## Updating Config Values
 
 1. Edit `config/testnet.json` or `config/mainnet.json`

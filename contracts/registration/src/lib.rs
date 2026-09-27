@@ -74,9 +74,13 @@ const PERSISTENT_TTL_MAX: u32 = 518_400;
 const ADMIN_BUMP_LEDGERS: u32 = 518_400;
 
 /// Default registration cooldown: 24 hours in seconds.
-/// Applies to register_player, register_scout, and register_validator.
+/// Applies to `register_player` and `register_scout`.
 /// Configurable by admin via `set_reg_cooldown`.  0 disables the cooldown.
+/// Maximum value is 7 days (604_800 seconds).
 const DEFAULT_REG_COOLDOWN_SECS: u64 = 86_400;
+
+/// Maximum allowed registration cooldown: 7 days in seconds.
+const MAX_REG_COOLDOWN_SECS: u64 = 7 * 24 * 60 * 60;
 
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -164,6 +168,35 @@ impl RegistrationContract {
         require_admin(&env, &DataKey::Admin, ADMIN_BUMP_LEDGERS)?;
         env.storage().instance().set(&DataKey::Paused, &false);
         Ok(())
+    }
+
+    /// Set the per-wallet registration cooldown in seconds (admin only).
+    /// Pass `0` to disable the cooldown entirely.
+    /// Bounds: `0..=604_800` (7 days).
+    pub fn set_reg_cooldown(env: Env, cooldown_secs: u64) -> Result<(), ScoutChainError> {
+        let admin = require_admin(&env, &DataKey::Admin, ADMIN_BUMP_LEDGERS)?;
+        if cooldown_secs > MAX_REG_COOLDOWN_SECS {
+            return Err(ScoutChainError::InvalidCooldown);
+        }
+        let old = env
+            .storage()
+            .instance()
+            .get(&DataKey::RegCooldownSecs(0))
+            .unwrap_or(DEFAULT_REG_COOLDOWN_SECS);
+        env.storage()
+            .instance()
+            .set(&DataKey::RegCooldownSecs(0), &cooldown_secs);
+        events::reg_cooldown_updated(&env, &admin, old, cooldown_secs);
+        Ok(())
+    }
+
+    /// Return the current registration cooldown in seconds.
+    /// Returns `DEFAULT_REG_COOLDOWN_SECS` (24h) if no override has been set.
+    pub fn get_reg_cooldown(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::RegCooldownSecs(0))
+            .unwrap_or(DEFAULT_REG_COOLDOWN_SECS)
     }
 
     /// Upgrade the contract WASM. Admin auth required.

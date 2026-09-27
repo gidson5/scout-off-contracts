@@ -248,6 +248,42 @@ stellar contract invoke --id $REGISTRATION_CONTRACT_ID \
 #### `set_progress_contract(addr: Address) -> Result<(), ScoutChainError>`
 
 Store the progress contract address so `set_player_level` may only be called
+by it.
+
+---
+
+#### `set_reg_cooldown(cooldown_secs: u64) -> Result<(), ScoutChainError>`
+
+Set the per-wallet registration cooldown in seconds. Pass `0` to disable the
+cooldown entirely. Bounds: `0..=604_800` (7 days).
+
+| | |
+|---|---|
+| **Auth** | Admin must sign |
+| **Errors** | `NotInitialized` · `Unauthorized` · `InvalidCooldown` |
+| **Emits** | `reg_cooldown_updated` with `(admin, old_cooldown, new_cooldown)` |
+
+```bash
+stellar contract invoke --id $REGISTRATION_CONTRACT_ID \
+  -- set_reg_cooldown --cooldown_secs 86400
+```
+
+---
+
+#### `get_reg_cooldown() -> u64`
+
+Return the current registration cooldown in seconds. Defaults to `86400` (24h)
+if no override has been set.
+
+```bash
+stellar contract invoke --id $REGISTRATION_CONTRACT_ID -- get_reg_cooldown
+```
+
+---
+
+#### `set_progress_contract(addr: Address) -> Result<(), ScoutChainError>`
+
+Store the progress contract address so `set_player_level` may only be called
 by that contract. Must be called after both contracts are deployed (admin only).
 Freely re-settable — no guard. Bumps the link's re-wiring epoch and emits
 `wiring_updated` (`link = "progress_contract"`) on every call (issue #1041).
@@ -729,6 +765,27 @@ registration is permitted; duplicate prevention is enforced per role only.
 | 16 | `RegistrationCooldown` | Registration attempted before the cooldown period has elapsed |
 | 17 | `PlayerRecordEvicted` | Player record was evicted from contract storage |
 | 18 | `ScoutRecordEvicted` | Scout record was evicted from contract storage |
+| 19 | `InvalidCooldown` | Cooldown value exceeds the maximum allowed (7 days) |
+
+### Events
+
+| Event | Topics | Data | Description |
+|-------|--------|------|-------------|
+| `player_registered` | event_name, admin (Address) | player_id (u64) | New player profile created |
+| `scout_registered` | event_name, admin (Address) | scout_id (u64) | New scout profile created |
+| `profile_updated` | event_name, wallet (Address) | player_id (u64) | Player profile updated |
+| `player_deregistered` | event_name, admin (Address) | player_id (u64) | Player profile removed |
+| `player_deactivated` | event_name, admin (Address) | player_id (u64) | Player hidden from discovery |
+| `player_reactivated` | event_name, admin (Address) | player_id (u64) | Player restored to discovery |
+| `player_level_synced` | event_name, caller (Address) | player_id (u64) | Player level updated by progress contract |
+| `scout_verified` | event_name, admin (Address) | scout_id (u64) | Scout marked verified |
+| `scout_deactivated` | event_name, admin (Address) | scout_id (u64) | Scout hidden from discovery |
+| `scout_reactivated` | event_name, admin (Address) | scout_id (u64) | Scout restored to discovery |
+| `admin_transfer_proposed` | event_name, old_admin (Address) | new_admin (Address) | Admin replacement proposed |
+| `admin_transferred` | event_name, old_admin (Address) | new_admin (Address) | Pending admin accepts control |
+| `migration_redeemed` | event_name, wallet (Address) | role (MigrationRole), profile_id (u64), new_contract_hint (Address) | Migration authorization redeemed |
+| `wiring_updated` | event_name, admin (Address) | link (String), new_address (Address) | Cross-contract wiring updated |
+| `reg_cooldown_updated` | event_name, admin (Address) | old_cooldown (u64), new_cooldown (u64) | Registration cooldown changed by admin |
 
 ---
 

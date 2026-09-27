@@ -17,6 +17,7 @@ pub const ADMIN_TRANSFER_PROPOSED: &str = "admin_transfer_proposed";
 pub const ADMIN_TRANSFERRED: &str = "admin_transferred";
 pub const MIGRATION_REDEEMED: &str = "migration_redeemed";
 pub const WIRING_UPDATED: &str = "wiring_updated";
+pub const REG_COOLDOWN_UPDATED: &str = "reg_cooldown_updated";
 
 /// topics: (event_name, admin, link)  data: (new_address, new_epoch)
 ///
@@ -135,6 +136,14 @@ pub fn scout_reactivated(env: &Env, scout_id: u64, admin: &Address) {
     env.events().publish(
         (Symbol::new(env, SCOUT_REACTIVATED), admin.clone()),
         scout_id,
+    );
+}
+
+/// topics: (event_name, admin)  data: (old_cooldown_secs, new_cooldown_secs)
+pub fn reg_cooldown_updated(env: &Env, admin: &Address, old_cooldown: u64, new_cooldown: u64) {
+    env.events().publish(
+        (Symbol::new(env, REG_COOLDOWN_UPDATED), admin.clone()),
+        (old_cooldown, new_cooldown),
     );
 }
 
